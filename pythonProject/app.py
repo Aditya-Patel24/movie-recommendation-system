@@ -1,8 +1,32 @@
 import streamlit as st
 import pickle
 import pandas as pd
+import requests
 
 
+# Function to fetch poster from OMDB API
+def fetch_poster(title):
+    # Replace spaces with '+' for URL encoding
+    query = title.replace(" ", "+")
+
+    # API endpoint
+    api_url = f"http://www.omdbapi.com/?t={query}&apikey=ecde459d"
+
+    # Fetch data from API
+    try:
+        response = requests.get(api_url)
+        data = response.json()
+
+        # Check if a poster is available
+        if 'Poster' in data and data['Poster'] != "N/A":
+            return data['Poster']
+        else:
+            return "https://via.placeholder.com/150"  # Placeholder image if no poster is found
+    except Exception as e:
+        return "https://via.placeholder.com/150"  # Placeholder image in case of an error
+
+
+# Function to recommend movies
 def recommend(movie):
     # Get the index of the selected movie
     movie_index = movies[movies['title'] == movie].index[0]
@@ -60,10 +84,16 @@ if st.button('Show Recommendation'):
     st.subheader('Recommended Movies:')
     st.write("---")  # Adds a horizontal line for separation
 
-    # Create columns to display movie names
-    for name in recommended_movie_names:
-        st.markdown(f"""
-            <div style="background-color: #f0f0f0; border-radius: 10px; padding: 10px; margin: 5px; text-align: center;">
-                <h3 style="color: #333;">{name}</h3>
-            </div>
-        """, unsafe_allow_html=True)
+    # Create columns to display movie names and posters side by side
+    cols = st.columns(len(recommended_movie_names))
+    for i, name in enumerate(recommended_movie_names):
+        poster_url = fetch_poster(name)
+
+        # Display the movie name and poster in each column
+        with cols[i]:
+            st.markdown(f"""
+                <div style="background-color: #fff; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); padding: 10px; margin: 10px; max-width: 200px; transition: transform 0.3s;">
+                    <img src="{poster_url}" alt="{name} Poster" style="width: 100%; height: auto; border-radius: 10px; margin-bottom: 10px;">
+                    <h4 style="color: #333; font-family: 'Arial', sans-serif; text-align: center;">{name}</h4>
+                </div>
+            """, unsafe_allow_html=True)
